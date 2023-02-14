@@ -8,13 +8,58 @@ import streamlit as st
 import pycountry
 import plotly.graph_objects as go
 import folium
+import time
+import requests
 
-# @st.cache  # No need for TTL this time. It's static data :)
-# def get_data_by_state():
-# 	return pd.read_csv("100 centuries of Sachin.csv")
+import altair as alt
 
-df = pd.read_csv("100 centuries of Sachin.csv")  # read a CSV file inside the 'data" folder next to 'app.py'
+
+
+
+@st.cache(allow_output_mutation=True)
+def load_data():
+    return pd.read_csv("sachin_100_centuries_lat_long.csv")
+
+df = load_data()
+
+# Define a function to get the latitude and longitude for a given location
+# def get_lat_long(location):
+#     url = f"https://nominatim.openstreetmap.org/search?q={location}&format=json"
+#     response = requests.get(url)
+#     data = response.json()
+#     if len(data) > 0:
+#         lat = data[0]['lat']
+#         lon = data[0]['lon']
+#         return lat, lon
+#     else:
+#         return None, None
+#
+# # Get the latitude and longitude for each location in the dataset
+# latitude = []
+# longitude = []
+# for index, row in df.iterrows():
+#     lat, lon = get_lat_long(row['Against'])
+#     latitude.append(lat)
+#     longitude.append(lon)
+#
+# # Add the latitude and longitude columns to the data frame
+# df['Latitude'] = latitude
+# df['Longitude'] = longitude
+#
+# # Save the updated data frame to a new CSV file
+# df.to_csv("sachin_100_centuries_lat_long.csv", index=False)
+# print(df.head)
+
+
+
+
+
+
+
+
+
 null = df.isnull().sum()
+
 df.rename(columns={"Test ":"Test","Date ":"Date"},inplace=True)
 df["Strike Rate"].isnull().sum()
 df["Strike Rate"].fillna(df["Strike Rate"].mean(),inplace=True)
@@ -26,25 +71,6 @@ df["Year"] = df["Date"].apply(lambda x : x.date().year)
 #++++++++++++++++++++++++++++++++++++++++
 #Maps
 
-def alpha3code(column):
-    CODE=[]
-    for Against in column:
-        try:
-            code=pycountry.countries.get(name=Against).alpha_3
-           # .alpha_3 means 3-letter country code
-           # .alpha_2 means 2-letter country code
-            CODE.append(code)
-        except:
-            if(Against=="England"):
-                CODE.append('GB')
-            else:
-                CODE.append('aqo')
-
-
-
-    return CODE
-# create a column for code
-df['CODE']=alpha3code(df.Against)
 
 
 
@@ -59,12 +85,10 @@ df['CODE']=alpha3code(df.Against)
 pair=sns.pairplot(df)
 
 #correlation between variables by heatmap
-fig, ax = plt.subplots()
+heatmaps, ax = plt.subplots()
 sns.heatmap(df.corr(), ax=ax,annot = True,cmap = "rainbow")
 
-# plt.figure(figsize = (10, 10))
-# heatmap =sns.heatmap(df.corr(), annot = True, cmap="rainbow")
-# plt.savefig('Correlation')
+
 
 
 
@@ -72,16 +96,12 @@ sns.heatmap(df.corr(), ax=ax,annot = True,cmap = "rainbow")
 #bARPLOT
 BARPLOT = px.bar(df.sort_values(['Score'],ascending=False),x='Year',y="Score",color='Year',
       title='How many centuries did Sachin score year-wise?',text_auto=True)
+
 #LINEPLOT
 lineplot = px.line(df.groupby(["Year"]).Score.sum())
 
-#Animated bar_chart
 
-# fig = px.bar(df, x='Date', y='Centuries', animation_frame='Date', animation_group='Match',
-#              range_x=['1989-12-08', '2012-03-18'], range_y=[0, 100],
-#              color='Country', labels={'Date': 'Date of Century', 'Centuries': 'Centuries Scored'}, height=600)
-#
-# st.plotly_chart(fig)
+#Animated bar_chart
 
 anim_bar= px.bar(df, x='Year', y='Score', animation_frame='Year', animation_group='Venue',
              range_x=['1990', '2012'], range_y=[0, 200],
@@ -99,15 +119,14 @@ fig_top_10_scores.update_traces(textposition='inside', textinfo='percent+label')
 
 #barplot
 year_wise_average_score = df.groupby(["Year"]).Score.mean()
-
 avg_score=px.bar(year_wise_average_score, x=year_wise_average_score.index, y=year_wise_average_score.values,
            title="What was Sachin's year-wise average score?",
            text_auto=True,
            color_discrete_sequence=[px.colors.qualitative.Alphabet],
            labels={"x": "Year", "y": "Average score"})
 
-#scatterplot
 
+#scatterplot
 plt.figure(figsize=(24,12))
 #scatter = sns.scatterplot(x= df['Year'] , y = df['Score'] , data = df)
 scatter = px.scatter(df, x="Year", y="Score", color="Score")
@@ -116,17 +135,7 @@ scatter = px.scatter(df, x="Year", y="Score", color="Score")
 sp = px.scatter_3d(df, x="Year", y="Score", z="Against", color="City", size="Year", hover_name="City",
                   symbol="Against", color_discrete_map = {"Year": "blue", "Score": "green", "Against":"red"})
 
-#MAPs
-maps = px.choropleth(df, locations="Against", color="Against", hover_name="Venue", animation_frame="Year", range_color=[20,80])
-#fig.show()
-#scatter = px.scatter(df, x="Year", y="Score", animation_frame="Year", animation_group="Against",
-           ## log_x=True, size_max=45, range_x=[100,100000], range_y=[25,90])
-#scatter= px.scatter(df, x="Year", y="Score", color="Score", marginal_y="violin",
-           #marginal_x="box", trendline="ols", template="simple_white")
 
-# df["e"] = df["Year"]/100
-# scatter= px.scatter(df, x="Year", y="Score", color="Score", error_x="e", error_y="e")
-#fig.show()
 
 #piplot #top 5 years of sachin
 
@@ -146,6 +155,7 @@ strike_rate=px.bar(year_wise_strike_rate,x=year_wise_strike_rate.index,y=year_wi
        color_discrete_sequence=[px.colors.qualitative.Alphabet],
        labels={"x":"Year","y":"Average century strike rate"})
 
+
 #Sachin performance against each team ( home vs away )
 
 performance= px.bar(df.groupby(["Against"]).Score.mean().sort_values(ascending=False),
@@ -153,6 +163,7 @@ performance= px.bar(df.groupby(["Against"]).Score.mean().sort_values(ascending=F
        text_auto=True,
        color_discrete_sequence=[px.colors.qualitative.Alphabet],
        labels={"x":"Country","y":"Average score"})
+
 
 performance_against_each_team_home_vs_away = df.groupby(["Against","H/A"]).Score.mean()
 performance_against_each_team_home_vs_away = performance_against_each_team_home_vs_away.reset_index()
@@ -166,6 +177,7 @@ per = px.bar(performance_against_each_team_home_vs_away,
        labels={"x":"Country","y":"Average score"},
        title="Sachin's performance against each team (home vs away)"
       )
+
 #Top 5 ground of sachine scored the most runs
 
 top_5_grounds = df.groupby(['Venue']).sum()
@@ -199,41 +211,110 @@ a=st.sidebar.radio('Navigation',['Welcome','Show Dataset','Show Visualization'])
 
 if a=='Show Dataset':
   st.text("Dataset")  # add a title
-  st.write(df)
+  st.dataframe(df)
 
 
   # visualize my dataframe in the Streamlit app
 elif a=="Show Visualization":
 
     st.text(null)
-    st.write(scatter)
-    st.write(sp)
+
+
     st.header("Missing Values")
     st.bar_chart(null)
     st.bar_chart(not_null)
-    st.text("Coreelation between the columns")
+
+    st.subheader("Satter plot")
+    st.write(scatter)
+
+    st.subheader("3d scatter plot")
+    st.write(sp)
+
+    st.subheader("Coreelation between the columns")
     st.pyplot(pair)
+
     st.subheader("Heatmap")
-    st.write(fig)
-    st.subheader("Bar plot")
+    st.write(heatmaps)
+
+    st.subheader("Bar plot of century score by sachin year wise")
     st.plotly_chart(BARPLOT)
+
     st.subheader("Line plot")
     st.plotly_chart(lineplot)
-    st.plotly_chart(fig_top_10_scores)
-    st.plotly_chart(avg_score)
-    st.plotly_chart(fig_top_5_scores_years)
-    st.plotly_chart(strike_rate)
-    st.plotly_chart(performance)
-    st.plotly_chart(per)
-    st.plotly_chart(ground)
-    #st.plotly_chart(maps)
-    st.subheader("Animated barplt")
+
+    st.subheader("Animated barplot")
     st.plotly_chart(anim_bar)
+
+    st.subheader("Donut chart  of top 10 century of sachin & year")
+    st.plotly_chart(fig_top_10_scores)
+
+    st.subheader("Barplot year wise average score of sachin?")
+    st.plotly_chart(avg_score)
+
+    st.subheader("Donut chart ")
+    st.plotly_chart(fig_top_5_scores_years)
+
+
+    st.subheader("Sachin year wise strike rate")
+    st.plotly_chart(strike_rate)
+
+    st.subheader("Sachine perforance")
+    st.plotly_chart(performance)
+
+    st.subheader("Sachin performance home vs away")
+    st.plotly_chart(per)
+
+    st.subheader("Top 5 ground sachin score the most")
+    st.plotly_chart(ground)
+
+
+
 
     st.title("Sachin Tendulkar's 100 Centuries Map Visualization")
 
     st.write("This is a map visualization of Sachin Tendulkar's 100 international cricket centuries.")
-    #st.write(m)
+    fig1 = px.scatter_mapbox(df, lat="Latitude", lon="Longitude", color="Venue",
+                            size="Score", hover_name="Score",
+
+                            mapbox_style="open-street-map")
+    fig1.update_layout(
+        mapbox_zoom=-18,
+        mapbox_center={"lat": 52.5310214, "lon": -1.2649062}
+    )
+
+    # Display the map in Streamlit
+    st.plotly_chart(fig1)
+
+    # Create a bar chart using Altair
+    chart = alt.Chart(df).mark_bar().encode(
+    x='Venue:N',
+    y='Score:Q',
+)
+
+# Display the chart in Streamlit
+    st.subheader("Altair chart")
+    st.altair_chart(chart)
+
+
+
+# Create a radar chart
+    radar_chart = px.line_polar(df, r='Score', theta='Against', line_close=True)
+
+# Show the radar chart in Streamlit
+    st.subheader("Radar chart")
+    st.plotly_chart(radar_chart)
+
+#number of centuris sachine tendulkar score on diffrent grounds
+    df_grouped = df.groupby('Venue').agg({'Score': 'count'})
+
+    # Create a pie chart
+    pie_chart = px.pie(df_grouped, values='Venue', names='Score')
+
+    # Show the pie chart in Streamlit
+    st.subheader("piechart")
+    st.plotly_chart(pie_chart)
+
+
 elif a=="Welcome" :
     st.header("Hello shashank")
     st.header("Data Visualization Assignment")
@@ -242,11 +323,6 @@ elif a=="Welcome" :
 
 
 
-#heat map
-# plt.figure(figsize = (10, 10))
-# sns.heatmap(df.corr(), annot = True, cmap="rainbow")
-# plt.savefig('Correlation')
-# plt.show()
 
 
 # Displot
@@ -257,3 +333,4 @@ elif a=="Welcome" :
 #     sns.distplot(df[i[1]])
 
 #ridges plot
+
