@@ -318,7 +318,7 @@ elif a=="Show Visualization":
 elif a=="Welcome" :
    
     st.header("Data Visualization Assignment")
-     st.header("Project by : Akash Nilkanth")
+    st.header("Project by : Akash Nilkanth")
 
 
 
