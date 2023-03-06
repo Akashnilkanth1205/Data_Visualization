@@ -9,8 +9,8 @@ import streamlit as st
 from streamlit_extras.add_vertical_space import add_vertical_space
 from PIL import Image
 
-
 # set page config for streamlit app
+
 st.set_page_config(page_title="Sachin Tendulkar 100 Centuries", layout="wide")
 
 image = Image.open("sachin.jpg")
@@ -19,13 +19,10 @@ st.image(image, caption='Sachin Tendulkar')
 
 # read the dataset
 df= pd.read_csv("Sachin Dataset.csv")
-
-
 # columns for layout
 row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns( (0.1, 2, 0.2, 1, 0.1))
 # title for app
 row0_1.title("Visualization of Sachin Tendulakar 100 centuries")
-
 # adding vertical space for aesthetics
 with row0_2:
     add_vertical_space()
@@ -143,7 +140,9 @@ with row5_1:
                  scatter = px.scatter(df, x="Year",y="Runs",size="Position",color="Year",title="Scatterplot Year vs Runs")
 
  st.plotly_chart(scatter)
- st.markdown("The Above plot is a Scatterplot which shows the Runs Scored by Sachin each year ")
+ st.markdown("The  above fig  shows the Scatterplot of Runs Scored by Sachin Tendulkar each year. A scatter plot is a popular visualization tool for examining the relationship between two variables. It is a two-dimensional plot in which each data point is represented by a dot. Each dot represents the Year of the century, runs score by Sachin and the position at which Sachin played. The light blue dot represents the lowest runs scored by whereas Dark blue dot represents the highest runs scored by Sachin Tendulkar."
+"As seen in Figure4 Sachin's first century came in 1990, when he scored 120 runs; his second century came three years later, in 1993, when he hit 105 runs. Sachin's highest career runs were 204 in year 2004, which was his first double century. Figure 4 further illustrates that Sachin performed very well when batting at position 4, whereas when batting at position 2 he scored less runs compared to batting at position 4. Sachin scored the fewest runs from 2000 to 2005, when he hit the century with a strike rate of 60. [3]"
+)
 #     )
 #
 #
@@ -155,8 +154,7 @@ with row5_2:
                                    symbol="Opponent", color_discrete_map={"Year": "blue", "Runs": "green", "Opponent": "red"})
 
  st.write(sp)
- st.markdown("The above chart is 3D chart which shows information about th Runs Scored,Opponent Team,City, and Year Of Match")
-
+ st.markdown("The fig5 shows the 3D plot in 3D plane which compares the 3 variables which is Team against Century scored, city where the century is Scored & year in which century is Scored. The right-hand side symbols represent he the city and the opposite team The same colour Symbol represent the Same city but different opponent team. As seen in fig the at Nagpur city Sachin Tendulkar played against West Indies in Year 1994 & Scored 179 runs. Most Number of centuries scored by Sachin was I at Sharjah & Nagpur where he scored. Where has he scored one one century in Manchester Against England, Sydney Against Australia, Perth, Against Australia, & Johannesburg, South Africa. [4]")
 #aadding sub header and Bar plot
 add_vertical_space()
 row6_space1, row6_1, row6_space2, row6_2, row6_space3 = st.columns(
@@ -243,6 +241,7 @@ with row8_1:
             ax.pie(location_percents, labels=location_percents.index, autopct="%1.1f%%")
     ax.set_title("Percentage of centuries Score against each team")
     st.pyplot(pie_chart)
+    st.markdown("The Pie chart above shows the percentage of centuries Scored by Sachin Tendulkar against each team. The different colors in the pie chart shows the different teams. As seen most number of centuries were score against Australia i.e., 20%. Whereas least number of centuries were score against Namibia.")
 
 
 # Sachine year wise strike rate
@@ -380,7 +379,10 @@ with st.expander("**See source code**"):
                               )
 # Display the map in Streamlit
 st.plotly_chart(Map)
-
+st.markdown("The most complex part in Mapping was the Web Scrapping ."
+"The longitude and latitude of the location are required to display the mapping."
+"To get the longitude and latitude, The function “get_lat_long”  that  is used to obtain the latitude and longitude of a specific location by providing its name as input. When this function is called with a location name, it constructs a URL that contains the location as a query parameter and sends an HTTP GET request to the OpenStreetMap Nominatim API using the requests library. The API then returns a response in JSON format containing the latitude and longitude of the location if it can be found. If the API returns a valid response, the function extracts the latitude and longitude from the JSON data and returns them as a tuple. However, if the API cannot find the location or if the request fails for some reason, the function returns None for both the latitude and longitude values. The code then iterates over each row in a Pandas data frame called df and calls the get_lat_long function to obtain the latitude and longitude for the opponent in each row. It will appends the latitude and longitude to two lists called latitude and longitude, respectively."
+"The code creates two new columns in the data frame df called Latitude and Longitude. It uses the latitude and longitude values obtained for each opponent location and add these new columns with the corresponding values. The updated df data frame is then saved as a new CSV file named 100_centuries_of_Sachin.csv.After this the Map is shown using the plotly express library and df data frame is then saved as a new CSV file named 100_centuries_of_Sachin.csv.After this the Map is shown using the plotly express library and visualizing it on streamlit web application.")
 # Create a bar chart using Altair
 with st.expander("**See source code**"):
     with st.echo():
