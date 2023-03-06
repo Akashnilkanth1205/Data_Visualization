@@ -1,337 +1,396 @@
-import numpy as np
-import pandas as pd
+# import necessary libraries
 import matplotlib.pyplot as plt
 import seaborn as sns
-import plotly.express as px
-import datetime
-import streamlit as st
-import pycountry
-import plotly.graph_objects as go
-import folium
-import time
-import requests
-
 import altair as alt
-
-
-
-
-@st.cache(allow_output_mutation=True)
-def load_data():
-    return pd.read_csv("sachin_100_centuries_lat_long.csv")
-
-df = load_data()
-
-# Define a function to get the latitude and longitude for a given location
-# def get_lat_long(location):
-#     url = f"https://nominatim.openstreetmap.org/search?q={location}&format=json"
-#     response = requests.get(url)
-#     data = response.json()
-#     if len(data) > 0:
-#         lat = data[0]['lat']
-#         lon = data[0]['lon']
-#         return lat, lon
-#     else:
-#         return None, None
-#
-# # Get the latitude and longitude for each location in the dataset
-# latitude = []
-# longitude = []
-# for index, row in df.iterrows():
-#     lat, lon = get_lat_long(row['Against'])
-#     latitude.append(lat)
-#     longitude.append(lon)
-#
-# # Add the latitude and longitude columns to the data frame
-# df['Latitude'] = latitude
-# df['Longitude'] = longitude
-#
-# # Save the updated data frame to a new CSV file
-# df.to_csv("sachin_100_centuries_lat_long.csv", index=False)
-# print(df.head)
-
-
-
-
-
-
-
-
-
-null = df.isnull().sum()
-
-df.rename(columns={"Test ":"Test","Date ":"Date"},inplace=True)
-df["Strike Rate"].isnull().sum()
-df["Strike Rate"].fillna(df["Strike Rate"].mean(),inplace=True)
-df["Test"].fillna(df["Test"].mean(),inplace=True)
-not_null = df.isnull().sum()
-df["Date"] = pd.to_datetime(df["Date"])
-df["Year"] = df["Date"].apply(lambda x : x.date().year)
-
-#++++++++++++++++++++++++++++++++++++++++
-#Maps
-
-
-
-
-
-
-
-
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=
-#df.head(5)
-
-#Correlation between variables by pairplot
-pair=sns.pairplot(df)
-
-#correlation between variables by heatmap
-heatmaps, ax = plt.subplots()
-sns.heatmap(df.corr(), ax=ax,annot = True,cmap = "rainbow")
-
-
-
-
-
-
-#bARPLOT
-BARPLOT = px.bar(df.sort_values(['Score'],ascending=False),x='Year',y="Score",color='Year',
-      title='How many centuries did Sachin score year-wise?',text_auto=True)
-
-#LINEPLOT
-lineplot = px.line(df.groupby(["Year"]).Score.sum())
-
-
-#Animated bar_chart
-
-anim_bar= px.bar(df, x='Year', y='Score', animation_frame='Year', animation_group='Venue',
-             range_x=['1990', '2012'], range_y=[0, 200],
-             color='Against', labels={'Year': 'Year of century', 'Score': 'Runs Score'}, height=900)
-
-
-#Pichart
-top_10_scores = df.sort_values(["Score"],ascending=False)[["Score","Year"]][:10]
-top_10_scores = top_10_scores.groupby(["Year"]).Year.sum()
-fig_top_10_scores = px.pie(top_10_scores, names=top_10_scores.index,values=top_10_scores.values,
-       hole=.5,
-       title="What were Sachin's top 10 centuries & in which year?")
-fig_top_10_scores.update_traces(textposition='inside', textinfo='percent+label')
-
-
-#barplot
-year_wise_average_score = df.groupby(["Year"]).Score.mean()
-avg_score=px.bar(year_wise_average_score, x=year_wise_average_score.index, y=year_wise_average_score.values,
-           title="What was Sachin's year-wise average score?",
-           text_auto=True,
-           color_discrete_sequence=[px.colors.qualitative.Alphabet],
-           labels={"x": "Year", "y": "Average score"})
-
-
-#scatterplot
-plt.figure(figsize=(24,12))
-#scatter = sns.scatterplot(x= df['Year'] , y = df['Score'] , data = df)
-scatter = px.scatter(df, x="Year", y="Score", color="Score")
-
-#3d Scatter plot
-sp = px.scatter_3d(df, x="Year", y="Score", z="Against", color="City", size="Year", hover_name="City",
-                  symbol="Against", color_discrete_map = {"Year": "blue", "Score": "green", "Against":"red"})
-
-
-
-#piplot #top 5 years of sachin
-
-top_5_scores_years = df.groupby(["Year"]).Score.sum().sort_values(ascending=False)[:5]
-fig_top_5_scores_years = px.pie(top_5_scores_years, names=top_5_scores_years.index,
-       values=top_5_scores_years.values,hole=.5,
-       title='Top 5 years in which Sachin scored the most number of runs?')
-fig_top_5_scores_years.update_traces(textposition='inside', textinfo='percent+label')
-
-
-
-#Sachine year wise strike rate
-year_wise_strike_rate = df.groupby(["Year"])["Strike Rate"].mean()
-strike_rate=px.bar(year_wise_strike_rate,x=year_wise_strike_rate.index,y=year_wise_strike_rate.values,
-       title="What was Sachin's year-wise average strike rate?",
-       text_auto=True,
-       color_discrete_sequence=[px.colors.qualitative.Alphabet],
-       labels={"x":"Year","y":"Average century strike rate"})
-
-
-#Sachin performance against each team ( home vs away )
-
-performance= px.bar(df.groupby(["Against"]).Score.mean().sort_values(ascending=False),
-       title="Sachin's average score against each team",
-       text_auto=True,
-       color_discrete_sequence=[px.colors.qualitative.Alphabet],
-       labels={"x":"Country","y":"Average score"})
-
-
-performance_against_each_team_home_vs_away = df.groupby(["Against","H/A"]).Score.mean()
-performance_against_each_team_home_vs_away = performance_against_each_team_home_vs_away.reset_index()
-performance_against_each_team_home_vs_away.Score = performance_against_each_team_home_vs_away.Score.map(lambda x: round(x))
-performance_against_each_team_home_vs_away_df = performance_against_each_team_home_vs_away.index
-per = px.bar(performance_against_each_team_home_vs_away,
-       x='Against',
-       y='Score',
-       color='H/A',
-       text='Score',
-       labels={"x":"Country","y":"Average score"},
-       title="Sachin's performance against each team (home vs away)"
-      )
-
-#Top 5 ground of sachine scored the most runs
-
-top_5_grounds = df.groupby(['Venue']).sum()
-top_5_grounds = top_5_grounds.sort_values(['Score'],ascending=False)
-top_5_grounds["Venue"] = top_5_grounds.index
-ground = px.bar(top_5_grounds[:10],
-       x='Score',
-       y="Venue",
-       orientation='h',
-       text_auto=True,
-      title="Sachin's top 5 grounds where he scored the most?")
-
-
-
-
-#MAp
-# m = folium.Map(location=[20, 70], zoom_start=4)
-#
-# for i, row in df.iterrows():
-#     folium.Marker(
-#         location=[row["latitude"], row["longitude"]],
-#         popup=row["Ground"]
-#     ).add_to(m)
-
-
-
-
-
-
-a=st.sidebar.radio('Navigation',['Welcome','Show Dataset','Show Visualization'])
-
-if a=='Show Dataset':
-  st.text("Dataset")  # add a title
-  st.dataframe(df)
-
-
-  # visualize my dataframe in the Streamlit app
-elif a=="Show Visualization":
-
-    st.text(null)
-
-
-    st.header("Missing Values")
-    st.bar_chart(null)
-    st.bar_chart(not_null)
-
-    st.subheader("Satter plot")
-    st.write(scatter)
-
-    st.subheader("3d scatter plot")
-    st.write(sp)
-
-    st.subheader("Coreelation between the columns")
+import pandas as pd
+import plotly.express as px
+import requests
+import streamlit as st
+from streamlit_extras.add_vertical_space import add_vertical_space
+from PIL import Image
+
+
+# set page config for streamlit app
+st.set_page_config(page_title="Sachin Tendulkar 100 Centuries", layout="wide")
+
+image = Image.open("sachin.jpg")
+st.image(image, caption='Sachin Tendulkar')
+
+
+# read the dataset
+df= pd.read_csv("Sachin Dataset.csv")
+
+
+# columns for layout
+row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns( (0.1, 2, 0.2, 1, 0.1))
+# title for app
+row0_1.title("Visualization of Sachin Tendulakar 100 centuries")
+
+# adding vertical space for aesthetics
+with row0_2:
+    add_vertical_space()
+# adding subheader with my information info
+row0_2.subheader(
+    "A Streamlit web app by Akash Nilkanth")
+
+# layout for app descriptio
+row1_spacer1, row1_1, row1_spacer2 = st.columns((0.1, 3.2, 0.1))
+
+# adding app description to layout
+with row1_1:
+    st.markdown(
+        "Hey there! Welcome to Sachin Tendulakr 100 centuries Visualization App. This app Analyze dataset  of Sachin Tendulkar, It Shows  some nice graphs, it tries to visualize the history of Sachin Tendulkar. One last tip, if you're on a mobile device, switch over to landscape for viewing ease. Give it a go!"
+    )
+    st.markdown(
+        "**Lets Begin** 👇"
+    )
+
+# adding header for data analysis and visualization section
+st.header("Analyzing & Visualizing the Dataset")
+st.write("")
+
+# creating layout for displaying number of rows and columns
+row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns( (0.1, 1, 0.1, 1, 0.1)
+ )
+# display number of rows and columns in dataset
+with row3_1:
+ df.rename(columns={"Test ":"Test","Date ":"Date"},inplace=True)
+ df["Date"] = pd.to_datetime(df["Date"])
+ df["Date"][0].date().year # Converts into year
+# Applying the same to entire column
+ df["Year"] = df["Date"].apply(lambda x: x.date().year) # Converts into year
+ with st.expander("**See source code**"):
+        with st.echo():
+         # get number of rows and columns in dataset
+         num_rows = df.shape[0]
+         num_cols = df.shape[1]
+        # Visualizing the number of rows and columns
+         figure, ax = plt.subplots()
+         ax.bar(['Number of Rows', 'Number of Columns'], [num_rows, num_cols])
+         ax.set_title('Sachin Tendulkar 100 Centuries Dataset')
+         ax.set_ylabel('Count')
+        #displaying on streamlit
+ st.subheader("Number of rows and columns")
+ st.plotly_chart(figure,theme="streamlit",use_container_width=True)
+ st.markdown(
+     " The Above chart shows the number of Rows & Columns in the Dataset. The Dataset has 16 rows & 100 columns"
+     )
+# create layout for displaying missing values and doing imputation
+with row3_2:
+
+ st.subheader("Missing Values")
+
+ # checking the missing value
+ null = df.isnull().sum()
+ # st.bar_chart(null)
+# Doing some imputation
+ df["Strike Rate"].isnull().sum()
+ df["Strike Rate"].fillna(df["Strike Rate"].mean(), inplace=True)
+ df["Test"].fillna(df["Test"].mean(), inplace=True)
+ not_null = df.isnull().sum()
+
+ # Display the plots side by side
+ col1, col2 = st.columns(2)
+ with col1:
+     with st.expander("**See source code**"):
+         with st.echo():
+           st.subheader("Missing values")
+     st.bar_chart(null, use_container_width=True)
+
+ with col2:
+     with st.expander("**See source code**"):
+         with st.echo():
+           st.subheader("Non Missing values")
+     st.bar_chart(not_null, use_container_width=True)
+ st.markdown("Looks like the Dataset has some Missing Values So Doing some  Imputation to Fill the Missing Values")
+
+row4_space1, row4_1, row4_space2, row4_2, row4_space3 = st.columns(
+     (0.1, 1, 0.1, 1, 0.1)
+ )
+
+with row4_1:
+    with st.expander("**See source code**"):
+        with st.echo():
+
+         # Correlation between variables by pairplot
+         pair = sns.pairplot(df)
+    st.subheader("Correlation Chart")
     st.pyplot(pair)
+    st.markdown("The Above plot is shows the relation between all the Columns. Each Columnin the Dataset is Compared with each other")
 
-    st.subheader("Heatmap")
-    st.write(heatmaps)
+with row4_2:
+           with st.expander("**See source code**"):
+             with st.echo():
+              st.subheader("HeatMap")
+              heatmaps, ax = plt.subplots()
+              sns.heatmap(df.corr(), ax=ax, annot=True, cmap="rainbow", linecolor='yellow', linewidths=2)
+              ax.set_title("Sachin 100 centuries Heatmap")
+           st.write(heatmaps)
+           st.markdown(" The Above Chart is HeatMap which shows the relations correlation in Numbers.The value of the correlation coefficient can take any values from -1 to 1.If the value is 1, it is said to be a positive correlation between two variables. This means that when one variable increases, the other variable also increases."
+"If the value is -1, it is said to be a negative correlation between the two variables. This means that when one variable increases, the other variable decreases."
+"If the value is 0, there is no correlation between the two variables. This means that the variables changes in a random manner with respect to each other."
+     )
+#Adding a subheader and scatterplot
+add_vertical_space()
+row5_space1, row5_1, row5_space2, row5_2, row5_space3 = st.columns(
+     (0.1, 1, 0.1, 1, 0.1) )
+#
+with row5_1:
+ with st.expander("**See source code**"):
+             with st.echo():
+                 st.subheader("Scatterplot Year vs Runs")
+                # scatterplot
+                 scatter = px.scatter(df, x="Year",y="Runs",size="Position",color="Year",title="Scatterplot Year vs Runs")
 
+ st.plotly_chart(scatter)
+ st.markdown("The Above plot is a Scatterplot which shows the Runs Scored by Sachin each year ")
+#     )
+#
+#
+with row5_2:
+ with st.expander("**See source code**"):
+             with st.echo():
+                 st.subheader("3D Scatter plot")
+                 sp = px.scatter_3d(df, x="Year", y="Runs", z="Opponent", color="City", size="Year", hover_name="City",
+                                   symbol="Opponent", color_discrete_map={"Year": "blue", "Runs": "green", "Opponent": "red"})
+
+ st.write(sp)
+ st.markdown("The above chart is 3D chart which shows information about th Runs Scored,Opponent Team,City, and Year Of Match")
+
+#aadding sub header and Bar plot
+add_vertical_space()
+row6_space1, row6_1, row6_space2, row6_2, row6_space3 = st.columns(
+    (0.1, 1, 0.1, 1, 0.1)
+)
+
+with row6_1:
+    with st.expander("**See source code**"):
+        with st.echo():
+    # Displaying the barplot of centiry Runs of sachin tendulkar year wise
+            BARPLOT = px.bar(df.sort_values(['Runs'], ascending=False), x='Year', y="Runs", color="Opponent",
+                             title='Number of centuries Sachine Tendulkar Runs each year', text_auto=True)
+            BARPLOT.update_layout(
+                width=600,
+                height=600)
     st.subheader("Bar plot of century score by sachin year wise")
     st.plotly_chart(BARPLOT)
 
-    st.subheader("Line plot")
-    st.plotly_chart(lineplot)
+with row6_2:
+ with st.expander("**See source code**"):
+             with st.echo():
+                 #Animated bar_chart
+                    anim_bar = px.bar(df, x='Year', y='Runs', animation_frame='Year', animation_group='Venue',
+                                      range_x=['1990', '2012'], range_y=[0, 200],
+                                      color='Opponent', labels={'Year': 'Year of century', 'Runs': 'Runs Runs'}, height=900)
+                    anim_bar.update_layout(
+                        width=600,
+                        height=600)
 
-    st.subheader("Animated barplot")
-    st.plotly_chart(anim_bar)
-
-    st.subheader("Donut chart  of top 10 century of sachin & year")
-    st.plotly_chart(fig_top_10_scores)
-
-    st.subheader("Barplot year wise average score of sachin?")
-    st.plotly_chart(avg_score)
-
-    st.subheader("Donut chart ")
-    st.plotly_chart(fig_top_5_scores_years)
+ st.subheader("Animated barplot")
+ st.plotly_chart(anim_bar)
+ st.markdown("Here you can see the Animated Graph")
 
 
-    st.subheader("Sachin year wise strike rate")
-    st.plotly_chart(strike_rate)
+add_vertical_space()
+row7_space1, row7_1, row7_space2, row7_2, row7_space3 = st.columns(
+    (0.1, 1, 0.1, 1, 0.1)
+)
+#
+with row7_1:
+    with st.expander("**See source code**"):
+        with st.echo():
+            # Pichart
+             top_score = df.sort_values(["Runs"], ascending=False)[["Runs", "Year"]][:10]
+             top_score = top_score.groupby(["Year"]).Year.sum()
+             piechart = px.pie(top_score, names=top_score.index, values=top_score.values,
+                              hole=.5,
+                              title="Sachin's top centuries & year")
+             piechart.update_traces(textposition='inside', textinfo='percent+label')
+             piechart.update_layout(
+                width=600,
+                height=600)
+    st.subheader("Donut chart of Sachin top centuries & year")
+    st.plotly_chart(piechart)
+    st.markdown("The above chart is the Donut chart which shows the  top most centuries of Sachin Tendulkar")
 
-    st.subheader("Sachine perforance")
+with row7_2:
+    with st.expander("**See source code**"):
+        with st.echo():
+            avg = df.groupby(["Year"]).Runs.mean()
+            avg_Runs = px.bar(avg, x=avg.index, y=avg.values,
+                              title="strike rate of sachin Tendukar each year",
+
+                              text_auto=True,
+                              color_discrete_sequence=[px.colors.qualitative.Alphabet],
+                              labels={"x": "Year", "y": "Strike rate"})
+            avg_Runs.update_layout(
+                width=600,
+                height=600)
+    st.subheader("Barplot year wise average Runs of sachin?")
+    st.plotly_chart(avg_Runs)
+    st.markdown("The Bar chart shoes the average runs of sachin Tendulakar each year")
+
+add_vertical_space()
+row8_space1, row8_1, row8_space2, row8_2, row8_space3 = st.columns((0.1, 1, 0.1, 1, 0.1)  )
+
+with row8_1:
+    with st.expander("**See source code**"):
+        with st.echo():
+            # Calculate the percentage of centuries scored in each location
+            location_counts = df["Opponent"].value_counts()
+            location_percents = location_counts / location_counts.sum() * 100
+            pie_chart, ax = plt.subplots()
+            ax.pie(location_percents, labels=location_percents.index, autopct="%1.1f%%")
+    ax.set_title("Percentage of centuries Score against each team")
+    st.pyplot(pie_chart)
+
+
+# Sachine year wise strike rate
+with row8_2:
+ with st.expander("**See source code**"):
+             with st.echo():
+                 year_wise_strike_rate = df.groupby(["Year"])["Strike Rate"].mean()
+                 strike_rate = px.bar(year_wise_strike_rate, x=year_wise_strike_rate.values, y=year_wise_strike_rate.index,
+                                     title="What was Sachin's year-wise average strike rate?",
+                                      orientation="h",
+                                     text_auto=True,
+                                     color_discrete_sequence=[px.colors.qualitative.Alphabet],
+                                     labels={"x": "Year", "y": "Average century strike rate"})
+                 strike_rate.update_layout(width=600,
+                                  height=500,
+                                  )
+ st.subheader("Sachin year wise strike rate")
+ st.plotly_chart(strike_rate)
+
+#displaying the barplot
+ add_vertical_space()
+row9_space1, row9_1, row9_space2, row9_2, row9_space3 = st.columns( (0.1, 1, 0.1, 1, 0.1))
+with row9_1:
+    with st.expander("**See source code**"):
+        with st.echo():
+
+            performance = px.bar(df.groupby(["Opponent"]).Runs.mean().sort_values(ascending=False),
+                                         title="Sachin's average Runs against each team",
+                                         text_auto=True,
+                                         color_discrete_sequence=[px.colors.qualitative.Alphabet],
+                                         labels={"x": "Country", "y": "Average Runs"})
+
+    st.subheader("Sachin performance")
     st.plotly_chart(performance)
+#displaying the  esachin performanace home vs away
+with row9_2:
+    with st.expander("**See source code**"):
+        with st.echo():
+            performance_against_each_team_home_vs_away = df.groupby(["Opponent", "H/A"]).Runs.mean()
+            performance_against_each_team_home_vs_away = performance_against_each_team_home_vs_away.reset_index()
+            performance_against_each_team_home_vs_away.Runs = performance_against_each_team_home_vs_away.Runs.map(
+                lambda x: round(x))
+            performance_against_each_team_home_vs_away_df = performance_against_each_team_home_vs_away.index
 
-    st.subheader("Sachin performance home vs away")
+            per = px.bar(performance_against_each_team_home_vs_away,
+                         x='Opponent',
+                         y='Runs',
+                         color='H/A',
+                         text='Runs',
+                         labels={"x": "Country", "y": "Average Runs"},
+                         title="Sachin's performance against each team (home vs away)"
+                         )
+        st.subheader("Sachin performance home vs away")
     st.plotly_chart(per)
-
-    st.subheader("Top 5 ground sachin score the most")
+#showing the horizontal bar chart of top grounds
+add_vertical_space()
+row10_space1, row10_1, row10_space2, row10_2, row10_space3 = st.columns(
+        (0.1, 1, 0.1, 1, 0.1)
+    )
+with row10_1:
+    with st.expander("**See source code**"):
+        with st.echo():
+            # Top 5 ground of sachine scored the most runs
+             top_5_grounds = df.groupby(['Venue']).sum()
+             top_5_grounds = top_5_grounds.sort_values(['Runs'], ascending=False)
+             top_5_grounds["Venue"] = top_5_grounds.index
+             ground = px.bar(top_5_grounds[:10],
+                                x='Runs',
+                                y="Venue",
+                                orientation='h',
+                                text_auto=True,
+                                title="Sachin's top 5 grounds where he scored the most")
+             ground.update_layout(
+                width=600,
+                height=600)
+             st.subheader("Top 5 ground sachin Runs the most")
     st.plotly_chart(ground)
 
+with row10_2:
+    with st.expander("**See source code**"):
+        with st.echo():
+            #displaying the top 5 grounds.
+                top_5_Runs_years = df.groupby(["Year"]).Runs.sum().sort_values(ascending=False)[:5]
+                fig_top_5_Runs_years = px.pie(top_5_Runs_years, names=top_5_Runs_years.index,
+                                              values=top_5_Runs_years.values, hole=.5,
+                                              title='Top 5 years in which Sachin scored the most number of runs?')
+                fig_top_5_Runs_years.update_traces(textposition='inside', textinfo='percent+label')
+                fig_top_5_Runs_years.update_layout(width=600,
+                                                   height=500,
+                                                   )
+                st.subheader("Donut chart ")
+    st.plotly_chart(fig_top_5_Runs_years)
+add_vertical_space()
 
 
 
-    st.title("Sachin Tendulkar's 100 Centuries Map Visualization")
-
-    st.write("This is a map visualization of Sachin Tendulkar's 100 international cricket centuries.")
-    fig1 = px.scatter_mapbox(df, lat="Latitude", lon="Longitude", color="Venue",
-                            size="Score", hover_name="Score",
-
-                            mapbox_style="open-street-map")
-    fig1.update_layout(
-        mapbox_zoom=-18,
-        mapbox_center={"lat": 52.5310214, "lon": -1.2649062}
-    )
-
-    # Display the map in Streamlit
-    st.plotly_chart(fig1)
-
-    # Create a bar chart using Altair
-    chart = alt.Chart(df).mark_bar().encode(
-    x='Venue:N',
-    y='Score:Q',
-)
-
-# Display the chart in Streamlit
-    st.subheader("Altair chart")
-    st.altair_chart(chart)
+# Define a function to get the latitude and longitude for a given location
+with st.expander("**See source code**"):
+    with st.echo():
+        @st.cache_data
+        def get_lat_long(location):
+                url = f"https://nominatim.openstreetmap.org/search?q={location}&format=json"
+                response = requests.get(url)
+                data = response.json()
+                if len(data) > 0:
+                    lat = data[0]['lat']
+                    lon = data[0]['lon']
+                    return lat, lon
+                else:
+                    return None, None
 
 
+        # Get the latitude and longitude for each location in the dataset
+        latitude = []
+        longitude = []
+        for index, row in df.iterrows():
+                lat, lon = get_lat_long(row['Opponent'])
+                latitude.append(lat)
+                longitude.append(lon)
 
-# Create a radar chart
-    radar_chart = px.line_polar(df, r='Score', theta='Against', line_close=True)
+            # Add the latitude and longitude columns to the data frame
+        df['Latitude'] = latitude
+        df['Longitude'] = longitude
 
-# Show the radar chart in Streamlit
-    st.subheader("Radar chart")
-    st.plotly_chart(radar_chart)
+            # Save the updated data frame to a new CSV file
+        df.to_csv("100_centuries_of_Sachin.csv", index=False)
+        data = pd.read_csv("100_centuries_of_Sachin.csv")
+        Map = px.scatter_mapbox(data, lat="Latitude", lon="Longitude", color="Opponent",
+                                    size="Runs", hover_name="Runs",
+                                    mapbox_style="open-street-map")
+        Map.update_layout(width=1200,
+                              height=800,
+                              mapbox_zoom=-12,
+                              # mapbox_center={"lat": 52.5310214, "lon": -1.2649062}
+                              )
+# Display the map in Streamlit
+st.plotly_chart(Map)
 
-#number of centuris sachine tendulkar score on diffrent grounds
-    df_grouped = df.groupby('Venue').agg({'Score': 'count'})
-
-    # Create a pie chart
-    pie_chart = px.pie(df_grouped, values='Venue', names='Score')
-
-    # Show the pie chart in Streamlit
-    st.subheader("piechart")
-    st.plotly_chart(pie_chart)
-
-
-elif a=="Welcome" :
-   
-    st.header("Data Visualization Assignment")
-    st.header("Project by : Akash Nilkanth")
+# Create a bar chart using Altair
+with st.expander("**See source code**"):
+    with st.echo():
+        chart = alt.Chart(df).mark_bar().encode(
+            x='Venue:N',
+            y='Runs:Q',
+        )
+        # Display the chart in Streamlit
+        st.subheader("Altair chart")
+st.altair_chart(chart)
 
 
-
-
-
-
-
-# Displot
-# plt.figure(figsize = (30,10))
-# features=[ 'Mat', 'Inns', 'NO', 'Runs', 'HS', 'Ave', 'BF', 'SR', '100','50', '0', 'Exp']
-# for i in enumerate(features):
-#     plt.subplot(3,4,i[0]+1)
-#     sns.distplot(df[i[1]])
-
-#ridges plot
 
