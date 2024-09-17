@@ -3,7 +3,7 @@ numpy==2.1.1   # Updated to a compatible latest version
 plotly==5.15.0     # Updated to the latest version
 pandas==2.0.3      # Updated to the latest version
 
-matplotlib==3.8.0  # Updated to the latest version
+matplotlib==3.9.2 # Updated to the latest version
 seaborn==0.12.2    # Latest compatible version
 
 pycountry==22.3.5  # No update needed, latest version
